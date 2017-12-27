@@ -73,7 +73,7 @@ def fl(infile,
 	match_strings=[
 		r'^<span><a href="https://\S+\.\S+/users/(?P<id>.+)">(?P<alias>.*?)</a></span>',
 		r'^<span class="quiet">(?P<age>\d+)(?P<gender>[\s\S]+)</span>$',
-		r'^<p>(?P<content>.*?)</p>$',
+		r'^<p>(?P<content>.*?)</p>',
 		r'^<div class="quiet"> <span>.*?written <time class="refresh-timestamp initialized" data-timestamp=".*?datetime="(?P<datetime>.*?)" title=".*?$',
 		]
 
@@ -99,7 +99,14 @@ def fl(infile,
 				for match_string in match_strings:
 					if re.match(match_string, text):
 						m = re.match(match_string, text)
-						message.update(m.groupdict())
+						m_dict = m.groupdict()
+						if list(m_dict.keys()) == ['content']:
+							try:
+								m_dict['content'] = message['content']+'\n\n'+m_dict['content']
+							except KeyError:
+								pass
+							m_dict['content'] = m_dict['content'].replace('<br/>','\n')
+						message.update(m_dict)
 		messages.append(message)
 
 	messages = pd.DataFrame.from_dict(messages)
@@ -123,4 +130,5 @@ def fl(infile,
 			save_as = path.join(save_as,filename+'.csv')
 		messages.to_csv(save_as)
 
+	print(messages)
 	return messages
