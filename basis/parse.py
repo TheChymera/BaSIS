@@ -48,5 +48,3 @@ def bluecover_gps(infile,
 		save_as = path.abspath(path.expanduser(save_as))
 		df.to_csv(save_as)
 
-if __name__ == "__main__":
-	bluecover_gps('~/Downloads/GPSWaypoints-2017-08-08.gpx')
