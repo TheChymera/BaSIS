@@ -54,6 +54,7 @@ def fl(infile,
 	anonymize=True,
 	anonymous_filename=True,
 	save_as="",
+	join=True,
 	):
 	"""Convert an HTML page containing messages from the fl platform to a pandas DataFrame with messages on rows and attributes on columns.
 
@@ -66,6 +67,8 @@ def fl(infile,
 	anonymous_filename : bool, optional
 		Whether to name the file according to the contained anonymous identities.
 		If this is `True`, the path passed to the `save_as` parameter will be treated as a directory, and a file with the anonymous filename will be created inside it.
+	join : bool, optional
+		Whether to try and join messages if destination file already exists.
 	save_as : str, optional
 		Whether to save the conversation to file (in comma separated values format).
 	"""
@@ -128,7 +131,23 @@ def fl(infile,
 		save_as = path.abspath(path.expanduser(save_as))
 		if anonymous_filename:
 			save_as = path.join(save_as,filename+'.csv')
-		messages.to_csv(save_as)
+		if path.isfile(save_as):
+			df = pd.DataFrame.from_csv(save_as)
+			if df.equals(messages):
+				pass
+			elif join:
+				messages = df.append(messages)
+				messages = messages.sort_index()
+				# We need to do some black magick here, because pandas implicitly tracks the index - in addition to the datetime value
+				# (this results in rows with identical column and index values but different positions in their original dataframes not being detected as duplicates).
+				messages = messages.reset_index()
+				messages.drop_duplicates(subset=messages.columns,keep='first', inplace=True)
+				messages = messages.set_index(pd.DatetimeIndex(messages['datetime']))
+				messages = messages.drop(['datetime'], 1)
+				messages.to_csv(save_as)
+			else:
+				print('The destination file ("{}") already exists, and is non-identical to the file which we attempt to create. It could be that these two message files are sequential, in order to attempt concatenating them please set the `join` parameter to `True`.'.format(save_as))
+		else:
+			messages.to_csv(save_as)
 
-	print(messages)
 	return messages
