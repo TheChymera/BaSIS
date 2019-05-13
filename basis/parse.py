@@ -1,8 +1,34 @@
 import pandas as pd
 import re
+import os
 from bs4 import BeautifulSoup
 from hashlib import sha256
 from os import path
+from mutagen.id3 import ID3
+
+def from_id3(in_path,
+	):
+	"""
+	Create dataframe based on a path containing files with ID3 tags.
+	"""
+
+	in_path = path.abspath(path.expanduser(in_path))
+	entries = []
+	for root, dirs, files in os.walk(in_path):
+		for f in files:
+			filepath = path.join(root,f)
+			try:
+				tags = ID3(filepath)
+			except:
+				pass
+			else:
+				tags_parsed = {}
+				for key in tags:
+					tags_parsed[key] = str(tags[key].text[0])
+				tags_parsed['file path'] = filepath
+				entries.append(tags_parsed)
+	df = pd.DataFrame(entries)
+	return df
 
 def bluecover_gps(infile,
 	save_as="output.csv",
